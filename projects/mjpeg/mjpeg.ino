@@ -66,7 +66,7 @@ static SemaphoreHandle_t semFrameUsed;   // 显示完一帧 -> 通知解码继�
 // ----------------- 打开视频 -----------------
 static bool open_video() {
   if (mjpegFile) mjpegFile.close();
-  mjpegFile = SD_MMC.open("/video.mjpeg");
+  mjpegFile = SD_MMC.open("/test.mjpeg");
   if (!mjpegFile) return false;
   mjpeg.setup(&mjpegFile, mjpegBuf, draw_to_fb, false, 0, 0, W, H);
   return true;

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ESP32 MJPEG Control</title>
+<style>
+  :root{
+    --bg:#0f1220; --card:#151a2c; --muted:#9aa4b2; --text:#e6e9ef;
+    --accent:#4f8cff; --ok:#34c759; --warn:#ff8a3d; --danger:#ff5d5d;
+    --radius:14px; --shadow: 0 6px 18px rgba(0,0,0,.35); --ring: 0 0 0 2px rgba(79,140,255,.35);
+  }
+  @media (prefers-color-scheme: light){
+    :root{ --bg:#f6f7fb; --card:#fff; --text:#1b2330; --muted:#64708a;
+      --shadow: 0 6px 18px rgba(16,24,40,.08); --ring: 0 0 0 2px rgba(79,140,255,.25); }
+  }
+  *{box-sizing:border-box}
+  body{margin:0; padding:24px; font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,Arial,sans-serif; background:var(--bg); color:var(--text);}
+  .wrap{max-width:780px; margin:0 auto}
+  .hdr{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:18px;}
+  .title{font-weight:600; letter-spacing:.2px; font-size:18px}
+  .chip{font-size:12px; color:var(--muted); background:var(--card); border-radius:999px; padding:6px 10px; box-shadow:var(--shadow);}
+  .card{background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:18px; margin:14px 0;}
+  .section-h{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px;}
+  .section-h h2{margin:0; font-size:15px; font-weight:600; letter-spacing:.2px;}
+  .status{font-size:12px; color:var(--muted)} .status strong{color:var(--text)}
+  .row{display:flex; flex-wrap:wrap; gap:10px;}
+  button{-webkit-tap-highlight-color:transparent; border:1px solid transparent; background:#1a2040; color:#e8ecf6; padding:10px 14px; border-radius:10px; font-weight:600; letter-spacing:.2px; cursor:pointer; transition:.18s ease; box-shadow:var(--shadow);}
+  button.secondary{background:transparent; border-color:#2a3356; color:var(--text);}
+  button.accent{ background:var(--accent) } button.ok{ background:var(--ok) } button.warn{ background:var(--warn) } button.danger{ background:var(--danger) }
+  button:hover{ filter:brightness(1.06); transform:translateY(-1px) rotate(-2deg) }
+  button:active{ transform:scale(.98) rotate(-4deg) } button:focus-visible{ outline:none; box-shadow:var(--ring) }
+  .grid{display:grid; gap:14px; grid-template-columns:1fr;} @media (min-width:640px){ .grid{ grid-template-columns: repeat(2, 1fr);} }
+  .footer{text-align:center; color:var(--muted); font-size:12px; margin-top:12px;}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="hdr">
+      <div class="title">ESP32 MJPEG Control</div>
+      <div class="chip">Now&nbsp;Playing: <span id="cur">—</span></div>
+    </div>
+    <div class="card">
+      <div class="section-h"><h2>Playback</h2><div class="status" id="stateLabel">state: <strong>playing</strong></div></div>
+      <div class="row">
+        <button id="toggleBtn" class="accent">Pause</button>
+        <button class="secondary" onclick="fetchAndToast('/play?file=default.mjpeg')">Play Default</button>
+        <button class="secondary" onclick="refreshStatus()">Refresh</button>
+      </div>
+    </div>
+    <div class="grid">
+      <div class="card"><div class="section-h"><h2>Doro</h2><div class="status">folder: /doro</div></div>
+        <div class="row">
+          <button class="secondary" onclick="fetchAndToast('/prev?folder=doro')">‹ Prev</button>
+          <button class="ok"        onclick="fetchAndToast('/next?folder=doro')">Next ›</button>
+        </div>
+      </div>
+      <div class="card"><div class="section-h"><h2>Neko</h2><div class="status">folder: /neko</div></div>
+        <div class="row">
+          <button class="secondary" onclick="fetchAndToast('/prev?folder=neko')">‹ Prev</button>
+          <button class="ok"        onclick="fetchAndToast('/next?folder=neko')">Next ›</button>
+        </div>
+      </div>
+      <div class="card"><div class="section-h"><h2>Azurlane</h2><div class="status">folder: /azurlane</div></div>
+        <div class="row">
+          <button class="secondary" onclick="fetchAndToast('/prev?folder=azurlane')">‹ Prev</button>
+          <button class="ok"        onclick="fetchAndToast('/next?folder=azurlane')">Next ›</button>
+        </div>
+      </div>
+      <div class="card"><div class="section-h"><h2>Utilities</h2><div class="status">quick actions</div></div>
+        <div class="row">
+          <button class="warn"   onclick="fetchAndToast('/reopen')">Reopen Current</button>
+          <button class="danger" onclick="fetchAndToast('/stop')">Stop</button>
+        </div>
+      </div>
+    </div>
+    <div class="footer">© MJPEG Player • minimal UI • no external assets</div>
+  </div>
+<script>
+  let playing = true;
+  async function refreshStatus(){
+    try{
+      const r = await fetch('/status', {cache:'no-store'});
+      const t = await r.text();
+      let path = t, state = null;
+      try { const j = JSON.parse(t); path = j.path || t; state = j.state || null; } catch(_) {}
+      document.getElementById('cur').textContent = path || '—';
+      if(state){ playing = (state === 'playing'); }
+      document.getElementById('stateLabel').innerHTML = 'state: <strong>' + (playing ? 'playing' : 'paused') + '</strong>';
+      document.getElementById('toggleBtn').textContent = playing ? 'Pause' : 'Resume';
+    }catch(e){
+      document.getElementById('cur').textContent = 'disconnected';
+      document.getElementById('stateLabel').innerHTML = 'state: <strong>unknown</strong>';
+    }
+  }
+  async function fetchAndToast(url){
+    try{ await fetch(url, {method:'GET', cache:'no-store'}); refreshStatus(); }catch(e){}
+  }
+  document.getElementById('toggleBtn').addEventListener('click', async () => {
+    playing = !playing;
+    document.getElementById('toggleBtn').textContent = playing ? 'Pause' : 'Resume';
+    document.getElementById('stateLabel').innerHTML = 'state: <strong>' + (playing ? 'playing' : 'paused') + '</strong>';
+    const endpoint = playing ? '/resume' : '/pause';
+    await fetchAndToast(endpoint);
+    refreshStatus();
+  });
+  refreshStatus();
+  setInterval(refreshStatus, 2000);
+</script>
+</body>
+</html>

@@ -1,4 +1,4 @@
-# 🎬 ESP32-S3 T-RGB MJPEG/GIF Player
+# 🎬 LilyGO ESP32-S3 T-RGB MJPEG/GIF Player
 
 This project designs a **website UI** for playing **user-uploaded GIFs** converted to `.mjpeg`.  
 Media is played at a consistent **480x480 resolution** and **15 FPS**.

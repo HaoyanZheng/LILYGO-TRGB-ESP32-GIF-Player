@@ -15,12 +15,9 @@ Media is played at a consistent **480x480 resolution** and **15 FPS**.
 
 ## 📸 Screenshots
 ### Web UI Example
-![Web UI Screenshot](docs/ui-example.png)
+![Web UI Screenshot](UI.png)
 
 ### Running on T-RGB Display
-![Device Running](docs/device-example.jpg)
-
-*(Put your images in a `docs/` folder in the repo, then reference them like above.)*
 
 ---
 
